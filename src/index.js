@@ -2,13 +2,24 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 
+/* Remarks:
+-function component = component which only has a render method
+-render() is called: when the React component is first instantiated
+                     whenever the component state is updated
+-the constructor of a subclass component should always first call the constructor of the base class -> super(props)
+-"each child in an array or iterator should have a unique 'key' pro" error
+  pops because React needs to determine what has changed for re-rendering => key={}
+  => daca nu e specificata nicio cheie, se va afisa un warning si se va folosi array index-ul ca si cheie default
+*/
+
+
   function Square(props){
     return (
       <button
-          className="square"
-          onClick={props.onClick}
+        className="square"
+        onClick={props.onClick}
       >
-          {props.value}
+        {props.value}
       </button>
     );
   }
@@ -17,8 +28,8 @@ import './index.css';
     renderSquare(i) {
       return (
         <Square
-            value={this.props.squares[i]}
-            onClick={() => this.props.onClick(i)}
+          value={this.props.squares[i]}
+          onClick={() => this.props.onClick(i)}
         />
       );
     }
@@ -48,38 +59,57 @@ import './index.css';
   
   class Game extends React.Component {
     constructor(props) {
-        super(props);
-        this.state = {
-            history: [{
-                squares: Array(9).fill(null),
-            }],
-            xIsNext: true,
-        };
+      super(props);
+      this.state = {
+        history: [{
+          squares: Array(9).fill(null),
+        }],
+        stepNumber: 0,
+        xIsNext: true,
+      };
     }
 
     handleClick(i) {
-        const history = this.state.history;
-        const current = history[history.length - 1];
-        const squares = current.squares.slice();
-        if (calculateWinner(squares) || squares[i]){
-            return;
-        }
+      const history = this.state.history.slice(0, this.state.stepNumber + 1);
+      const current = history[history.length - 1];
+      const squares = current.squares.slice();
+      if (calculateWinner(squares) || squares[i]){
+        return;
+      }
 
-        squares[i] = this.state.xIsNext ? 'X' : 'O';
-        this.setState({
-            history: history.concat([{
-                squares: squares,
-            }]),
-            xIsNext: !this.state.xIsNext,
-        });
+      squares[i] = this.state.xIsNext ? 'X' : 'O';
+      this.setState({
+          history: history.concat([{
+            squares: squares,
+          }]),
+          stepNumber: history.length,
+          xIsNext: !this.state.xIsNext,
+      });
+    }
 
-        console.log(squares);
+    jumpTo(step) {
+      this.setState({
+        stepNumber: step,
+        xIsNext: (step % 2) === 0,
+      });
     }
 
     render() {
       const history = this.state.history;
-      const current = history[history.length - 1];
+      const current = history[this.state.stepNumber];
       const winner = calculateWinner(current.squares);
+
+      const moves = history.map((step, move) => {
+        const desc = move ?
+          'Go to move #' + move :
+          'Go to game start';
+        return (
+          <li key={move}>
+            <button onClick={() => this.jumpTo(move)}>{desc}</button>
+          </li>
+        );
+      });
+
       let status;
       if (winner) {
         status = 'Winner: ' + winner; 
@@ -98,7 +128,7 @@ import './index.css';
           </div>
           <div className="game-info">
             <div>{status}</div>
-            <ol>{/* TODO */}</ol>
+            <ol>{moves}</ol>
           </div>
         </div>
       );
